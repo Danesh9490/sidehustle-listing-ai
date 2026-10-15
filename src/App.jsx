@@ -14,6 +14,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
 
   function updateField(event) {
     setForm({ ...form, [event.target.name]: event.target.value });
@@ -23,6 +24,7 @@ export default function App() {
     event.preventDefault();
     setLoading(true);
     setError("");
+    setCopyMessage("");
     setResult(null);
 
     try {
@@ -55,24 +57,51 @@ export default function App() {
   async function copyText(text) {
     try {
       await navigator.clipboard.writeText(text);
+      setCopyMessage("Copied to clipboard!");
+      setError("");
     } catch {
       setError("Copy failed. Please select the text and copy it manually.");
     }
   }
+
+  function copyButton(text, label = "Copy") {
+    return (
+      <button
+        className="copy-button"
+        type="button"
+        onClick={() => copyText(text)}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  const title = result?.title || "";
+  const description = result?.description || "";
+  const bulletPoints = Array.isArray(result?.bulletPoints)
+    ? result.bulletPoints
+    : [];
+  const keywords = Array.isArray(result?.keywords)
+    ? result.keywords
+    : [];
 
   return (
     <main className="app-shell">
       <header className="topbar">
         <a className="brand" href="#">
           <span className="brand-mark">S</span>
-          <span>SideHustle<span className="brand-accent"> AI</span></span>
+          <span>
+            SideHustle<span className="brand-accent"> AI</span>
+          </span>
         </a>
         <span className="topbar-label">AI LISTING STUDIO</span>
       </header>
 
       <section className="hero">
         <p className="eyebrow">YOUR NEXT SALE STARTS HERE</p>
-        <h1>Turn product details into <span>better listings.</span></h1>
+        <h1>
+          Turn product details into <span>better listings.</span>
+        </h1>
         <p className="hero-copy">
           Create compelling product titles, descriptions, and selling points
           with AI — so you can spend more time growing your business.
@@ -156,7 +185,11 @@ export default function App() {
             </div>
           </div>
 
-          <button className="generate-button" type="submit" disabled={loading}>
+          <button
+            className="generate-button"
+            type="submit"
+            disabled={loading}
+          >
             {loading ? "Creating your listing..." : "✦ Generate my listing"}
           </button>
 
@@ -164,7 +197,12 @@ export default function App() {
             AI-generated content should be reviewed for accuracy before
             publishing.
           </p>
-          {error && <p className="error-message" role="alert">{error}</p>}
+
+          {error && (
+            <p className="error-message" role="alert">
+              {error}
+            </p>
+          )}
         </form>
 
         <section className="result-panel" aria-live="polite">
@@ -196,9 +234,101 @@ export default function App() {
             <div className="empty-state">
               <div className="empty-icon spinning">✦</div>
               <h3>Crafting your listing...</h3>
-              <p>Our AI is turning your product details into polished copy.</p>
+              <p>
+                Our AI is turning your product details into polished copy.
+              </p>
             </div>
           )}
 
           {result && (
             <div className="generated-content">
+              {copyMessage && (
+                <p className="form-note" role="status">
+                  {copyMessage}
+                </p>
+              )}
+
+              {title && (
+                <div className="output-section">
+                  <div className="output-heading">
+                    <h3>PRODUCT TITLE</h3>
+                    {copyButton(title)}
+                  </div>
+                  <p>{title}</p>
+                </div>
+              )}
+
+              {description && (
+                <div className="output-section">
+                  <div className="output-heading">
+                    <h3>PRODUCT DESCRIPTION</h3>
+                    {copyButton(description)}
+                  </div>
+                  <p>{description}</p>
+                </div>
+              )}
+
+              {bulletPoints.length > 0 && (
+                <div className="output-section">
+                  <div className="output-heading">
+                    <h3>KEY SELLING POINTS</h3>
+                    {copyButton(bulletPoints.join("\n"), "Copy points")}
+                  </div>
+                  <ul>
+                    {bulletPoints.map((point, index) => (
+                      <li key={`${index}-${point}`}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {keywords.length > 0 && (
+                <div className="output-section">
+                  <div className="output-heading">
+                    <h3>SEARCH KEYWORDS</h3>
+                    {copyButton(keywords.join(", "), "Copy keywords")}
+                  </div>
+                  <p>{keywords.join(", ")}</p>
+                </div>
+              )}
+
+              {!title && !description && !bulletPoints.length && !keywords.length && (
+                <div className="error-message">
+                  The AI returned no listing fields. Please try generating
+                  the listing again.
+                </div>
+              )}
+
+              <button
+                className="generate-button"
+                type="button"
+                onClick={() =>
+                  copyText(
+                    [
+                      title && `PRODUCT TITLE\n${title}`,
+                      description && `DESCRIPTION\n${description}`,
+                      bulletPoints.length &&
+                        `KEY SELLING POINTS\n${bulletPoints
+                          .map((point) => `- ${point}`)
+                          .join("\n")}`,
+                      keywords.length && `KEYWORDS\n${keywords.join(", ")}`
+                    ]
+                      .filter(Boolean)
+                      .join("\n\n")
+                  )
+                }
+              >
+                Copy complete listing
+              </button>
+            </div>
+          )}
+        </section>
+      </section>
+
+      <footer className="footer">
+        <span>SideHustle AI · Built for independent sellers</span>
+        <span>AI-assisted copy · Review before publishing</span>
+      </footer>
+    </main>
+  );
+}
